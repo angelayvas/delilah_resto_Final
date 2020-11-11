@@ -1,0 +1,601 @@
+swagger: "2.0"
+info:
+  description: "este documento contiene las especificaciones de la API delilah resto."
+  version: "1.0.0"
+  title: "Delilah Restó"
+  
+  contact:
+    email: "angela@delilahresto.com"
+ 
+host: "localhost:3000"
+basePath: "/v1"
+tags:
+  - name: "products"
+    description: "contiene productos disponibles "
+  - name: "orders"
+    description: "Acceso a pedidos "
+
+  - name: "users"
+    description: "Operaciones sobre usuarios "
+schemes:
+  - "https"
+  - "http"
+paths:
+  /products:
+    get:
+      tags:
+        - "products"
+      summary: "Returns product inventory"
+      description: "Devuelve todos los productos listados "
+      operationId: "getInventory"
+      produces:
+        - "application/json"
+      parameters: []
+      responses:
+        200:
+          description: "operacion exitosa"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/product_stored"
+
+    post:
+      tags:
+        - "productos"
+      summary: "Add a new product to the store"
+      operationId: "addProduct"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "header"
+          name: "autorizacion"
+          description: "token de autenticacion"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Objeto de producto que debe agregarse a la tienda"
+          required: true
+          schema:
+            $ref: "#/definitions/product_upload"
+      responses:
+        201:
+          description: "Crear"
+          schema:
+            type: "object"
+            properties:
+              ProductId:
+                type: "number"
+        400:
+          description: "Argumentos faltantes"
+        401:
+          description: "El token ha caducado. Por favor ingrese nuevamente"
+        403:
+          description: "Forbidden"
+      security:
+        - store_auth:
+            - "write:products"
+
+  /products/{productId}:
+    put:
+      tags:
+        - "productos"
+      summary: "Update an existing product"
+      description: ""
+      operationId: "updateProduct"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "productId"
+          in: "path"
+          description: "ID del producto para actualiar "
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: "header"
+          name: "authorization"
+          description: "Autenticaccion del token"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Propiedades del producto que deben actualizarse en la tienda"
+          required: true
+          schema:
+            $ref: "#/definitions/product_upload"
+      responses:
+        202:
+          description: "Acepted"
+          schema:
+            $ref: "#/definitions/product_stored"
+        401:
+          description: "su token ha caducado, por favor ingrese nuevamente "
+        403:
+          description: "Forbidden"
+        404:
+          description: "Product not found"
+      security:
+        - store_auth:
+            - "write:products"
+
+    delete:
+      tags:
+        - "products"
+      summary: "Deletes a product"
+      description: ""
+      operationId: "deleteProduct"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "productId"
+          in: "path"
+          description: "ID del producto a eliminar"
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: "header"
+          name: "authorization"
+          description: "Autenticacion del Token"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "eliminar"
+        401:
+          description: "su token ha caducado"
+        403:
+          description: "Forbidden"
+        404:
+          description: "Producto no encontrado"
+        409:
+          description: "Producto vinculado a un pedido activo.  vuelve a intentarlo."
+      security:
+        - store_auth:
+            - "write:products"
+
+  /orders:
+    get:
+      tags:
+        - "orders"
+      summary: "Returns orders inventory"
+      description: "Devuelve todos los pedidos existentes en la tienda"
+      operationId: "getOrders"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "header"
+          name: "authorization"
+          description: "Autenticaccion del token"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "operacion exitosa"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/order_complete"
+      security:
+        - store_auth:
+            - "write:orders"
+
+    post:
+      tags:
+        - "orders"
+      summary: "Add a new order to the store"
+      description: ""
+      operationId: "addOrder"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Objeto de pedido que debe agregarse a la tienda"
+          required: true
+          schema:
+            $ref: "#/definitions/order_sent"
+      responses:
+        201:
+          description: "Creado"
+          schema:
+            $ref: "#/definitions/order_complete"
+        400:
+          description: "Usuario no encontrado"
+        405:
+          description: "argumentos faltantes"
+
+  /orders/{orderId}:
+    put:
+      tags:
+        - "orders"
+      summary: "Update the status of an existing order"
+      description: ""
+      operationId: "updateOrderStatus"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "orderId"
+          description: "ID pedido para actualiar"
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: "header"
+          name: "authorization"
+          description: "Autenticacion Token"
+          required: true
+          type: "string"
+        - in: "body"
+          name: "body"
+          description: "Estado del pedido que debe actualizarse en la tienda"
+          required: true
+          schema:
+            $ref: "#/definitions/order_statusToUpload"
+      responses:
+        202:
+          description: "Aceptado"
+          schema:
+            $ref: "#/definitions/order_uploaded"
+        401:
+          description: "El token ha caducado. Por favor ingrese nuevamente"
+        403:
+          description: "prohibido"
+        404:
+          description: "Orden no encontrada"
+        405:
+          description: "estado no valido"
+      security:
+        - store_auth:
+            - "write:orders"
+
+    delete:
+      tags:
+        - "orders"
+      summary: " Deletes an order"
+      description: "elimina una orden"
+      operationId: "deleteOrder"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "orderId"
+          in: "path"
+          description: "elimina un pedido"
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: "header"
+          name: "authorization"
+          description: "Authentication Token"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "Borrado"
+        401:
+          description: "Token ha caducado por favor ingrese nuevamente"
+        403:
+          description: "Forbidden"
+        404:
+          description: "Orden no encontrada"
+      security:
+        - store_auth:
+            - "write:products"
+
+  /users:
+    get:
+      tags:
+        - "users"
+      summary: "Returns users list"
+      description: "Returna usuarios registrados en la lista "
+      operationId: "getUsers"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "header"
+          name: "authorization"
+          description: "Autenticacion del  Token"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "operacion exitosa"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/user_registered"
+      security:
+        - store_auth:
+            - "write:users"
+
+    post:
+      tags:
+        - "users"
+      summary: "Create user"
+      description: "Crea un nuevo usuario."
+      operationId: "createUser"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Created user object"
+          required: true
+          schema:
+            $ref: "#/definitions/user_register"
+      responses:
+        201:
+          description: "usuario creado"
+          schema:
+            $ref: "#/definitions/user_id"
+        400:
+          description: "Argumentos faltantes"
+        409:
+          description: "El nombre de usuario ya está en uso / El usuario ya existe"
+
+  /users/login:
+    post:
+      tags:
+        - "users"
+      summary: "Logs user into the store"
+      description: ""
+      operationId: "loginUser"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "credentials"
+          in: "body"
+          description: "El nombre de usuario y la contraseña para iniciar sesión"
+          required: true
+          schema:
+            type: "object"
+            properties:
+              username:
+                type: "string"
+              password:
+                type: "string"
+      responses:
+        200:
+          description: "operacion exitosa"
+          schema:
+            type: "string"
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          headers:
+            X-Expires-After:
+              type: "string"
+              format: "date-time"
+              description: "fecha en UTC cuando expira el token"
+        400:
+          description: "nombre de usuario no valido / contraseña incorrecta"
+
+securityDefinitions:
+  store_auth:
+    type: "oauth2"
+    authorizationUrl: "localhost/v1/users/login"
+    flow: "implicit"
+    scopes:
+      write:products: "create, modify and delete products in the store"
+      write:orders: "modify orders status in the store"
+      write:users: "list the registered users"
+
+definitions:
+  order_sent:
+    type: "object"
+    properties:
+      username:
+        type: "string"
+      products:
+        type: "array"
+        items:
+          $ref: "#/definitions/selected_item"
+      payment_method:
+        type: "string"
+        description: "payment method chosen by the user"
+        enum:
+          - "cash"
+          - "credit card"
+
+  order_complete:
+    type: "object"
+    properties:
+      order_id:
+        type: "number"
+      order_status:
+        type: "string"
+        enum:
+          - "new"
+          - "confirmed"
+          - "preparing"
+          - "delivering"
+          - "delivered"
+      order_time:
+        type: "string"
+        example: "17:39:20"
+      order_description:
+        type: "string"
+        example: "1xDoubleBurg 2xFrenchFr"
+      order_amount:
+        type: "number"
+      payment_method:
+        type: "string"
+        description: "payment method chosen by the user"
+        enum:
+          - "cash"
+          - "credit card"
+      user_id:
+        type: "number"
+      username:
+        type: "string"
+      firstname:
+        type: "string"
+      lastname:
+        type: "string"
+      address:
+        type: "string"
+      email:
+        type: "string"
+      phone_number:
+        type: "string"
+      products:
+        type: "array"
+        items:
+          type: "object"
+          properties:
+            product_quantity:
+              type: "number"
+            product_name:
+              type: "string"
+              example: "Double Burger"
+            product_price:
+              type: "number"
+            product_photo:
+              type: "array"
+              items:
+                type: "string"
+
+  order_uploaded:
+    type: "object"
+    properties:
+      order_id:
+        type: "number"
+      order_status:
+        type: "string"
+        enum:
+          - "new"
+          - "confirmed"
+          - "preparing"
+          - "delivering"
+          - "delivered"
+      order_time:
+        type: "string"
+        example: "17:39:20"
+      order_description:
+        type: "string"
+        example: "1xDoubleBurg 2xFrenchFr"
+      order_amount:
+        type: "number"
+      payment_method:
+        type: "string"
+        description: "payment method chosen by the user"
+        enum:
+          - "cash"
+          - "credit card"
+      user_id:
+        type: "number"
+
+  selected_item:
+    type: "object"
+    properties:
+      productId:
+        type: "number"
+      quantity:
+        type: "number"
+
+  user_register:
+    type: "object"
+    properties:
+      username:
+        type: "string"
+      firstname:
+        type: "string"
+      lastname:
+        type: "string"
+      password:
+        type: "string"
+      email:
+        type: "string"
+      address:
+        type: "string"
+      phone_number:
+        type: "string"
+      is_admin:
+        type: "integer"
+        minimum: 0
+        maximum: 1
+
+  user_registered:
+    type: "object"
+    properties:
+      user_id:
+        type: "number"
+      username:
+        type: "string"
+      firstname:
+        type: "string"
+      lastname:
+        type: "string"
+      password:
+        type: "string"
+      email:
+        type: "string"
+      address:
+        type: "string"
+      phone_number:
+        type: "string"
+      is_admin:
+        type: "integer"
+        minimum: 0
+        maximum: 1
+
+  user_id:
+    type: "object"
+    properties:
+      userId:
+        type: "number"
+
+  order_statusToUpload:
+    type: "object"
+    properties:
+      Status:
+        type: "string"
+        description: "order status in the store"
+        enum:
+          - "new"
+          - "confirmed"
+          - "preparing"
+          - "delivering"
+          - "delivered"
+
+  product_stored:
+    type: "object"
+    required:
+      - "name"
+      - "photoUrls"
+      - "price"
+    properties:
+      product_id:
+        type: "integer"
+        format: "int64"
+      product_name:
+        type: "string"
+        example: "Double-burger"
+      product_price:
+        type: "number"
+      product_photo:
+        type: "array"
+        items:
+          type: "string"
+
+  product_upload:
+    type: "object"
+    required:
+      - "product_name"
+      - "product_photo"
+      - "product_price"
+    properties:
+      product_name:
+        type: "string"
+        example: "Double-burger"
+      product_photo:
+        type: "array"
+        items:
+          type: "string"
+      product_price:
+        type: "number"
